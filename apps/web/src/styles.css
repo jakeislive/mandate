@@ -1,4 +1,16 @@
 /* ---------- Tokens ---------- */
+.test-network-warning { padding: 14px 18px; border: 1px solid #b58b2e; border-radius: 12px; background: #33290e; color: #fff0ba; font-size: .875rem; line-height: 1.6; }
+.test-network-warning strong { font-weight: 600; }
+.test-network-warning.is-persistent { position: sticky; top: 0; z-index: 20; border-radius: 0; text-align: center; }
+.dialog > .test-network-warning { margin-bottom: 18px; }
+.demo-login { min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+.demo-login .test-network-warning { max-width: 620px; }
+.demo-login > .button { min-width: 180px; font-size: 1rem; }
+.testnet-snapshot { display: grid; gap: 24px; }
+.snapshot-summary { display: grid; gap: 14px; padding: 24px; }
+.snapshot-summary h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); }
+.snapshot-limits { color: var(--ink); line-height: 1.6; }
+.snapshot-hash { overflow-wrap: anywhere; font-family: ui-monospace, monospace; font-size: .875rem; }
 
 /* Dark is the default look; light is the same light field, turned pale. */
 :root {

@@ -19,10 +19,14 @@ import { SignIn } from "./SignIn.tsx";
 import { StripeFundingReturn } from "./StripeFundingReturn.tsx";
 import { initials, money, formatValue } from "./format.ts";
 import { Logo, PlusIcon } from "./icons.tsx";
+import { IS_STATIC_DEMO } from "./demo-mode.ts";
+import { StaticTestnetApp } from "./StaticTestnetApp.tsx";
+import { TestNetworkWarning } from "./TestNetworkWarning.tsx";
 
 export function App() {
+  if (IS_STATIC_DEMO) return <StaticTestnetApp />;
   const path = window.location.pathname.replace(/\/$/, "");
-  return path === "/chat" ? <ChatPage /> : path === "/pay" ? <PayPage /> : <WorkspaceApp />;
+  return <><TestNetworkWarning persistent />{path === "/chat" ? <ChatPage /> : path === "/pay" ? <PayPage /> : <WorkspaceApp />}</>;
 }
 
 function WorkspaceApp() {

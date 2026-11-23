@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc -p .",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "test:demo": "node --test src/demo.test.ts",
+    "test:ui:demo": "playwright test --config playwright.demo.config.ts"
   },
   "dependencies": {
     "@mandate/shared": "workspace:*",

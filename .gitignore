@@ -28,6 +28,7 @@ contracts/target/
 .claude/
 playwright-report/
 test-results/
+.wrangler/
 
 # Xcode
 xcuserdata/
