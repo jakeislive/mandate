@@ -13,12 +13,12 @@ async function request<T>(path: string, method = "GET", body?: unknown): Promise
       if (!demo) {
         // Discard the previous simulator's state without reading or parsing it.
         try { window.localStorage.removeItem("mandate.static-demo.v1"); } catch { /* No record storage is required. */ }
-        demo = createDemo(window.sessionStorage);
+        demo = createDemo();
       }
       return demo.request(path, method, body as Record<string, unknown> | undefined) as T;
     } catch (error) {
       if (error instanceof DemoError) throw new ApiError(error.status, error.message);
-      throw new Error("The Testnet view could not open. Enable session storage and try again.");
+      throw new Error("The Testnet view could not open. Please try again.");
     }
   }
   let response: Response;

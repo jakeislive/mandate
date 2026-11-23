@@ -2,7 +2,7 @@
 
 Purchasing agents for teams, inside rules the agents cannot break.
 
-This branch displays a fixed, read-only snapshot of real Stellar Testnet smart accounts, mandate rules, and confirmed transactions, with a one-button TUser login. Public data is embedded in the webpage; no database or signing keys are deployed. The snapshot is capped at five accounts and five mandates per user, with five transactions per account. Creation, funding, and payment actions are disabled. The technology and architecture below describe the full application source, which remains available alongside this static view.
+This branch opens directly to a fixed, read-only dashboard of real Stellar Testnet smart accounts, mandate rules, and confirmed transactions, displaying User ID TUser without login. Public data is embedded in the webpage; no database or signing keys are deployed. The snapshot is capped at five accounts and five mandates per user, with five transactions per account. Creation, funding, and payment actions are disabled. The technology and architecture below describe the full application source, which remains available alongside this static view.
 
 ## Product
 

@@ -39,13 +39,13 @@ For an alternative **Pages** project, publish `apps/web/dist` after `pnpm run bu
 
 ## Snapshot behavior
 
-**Login** opens the fixed TUser view. Public demo credentials are `test@testing.com` and `testing1234567890`; they select a public view and do not grant control of the displayed wallets. Public account creation is disabled.
+The dashboard opens directly to the fixed public view with **User ID: TUser**. No login or session storage is required. The ID labels the public view and does not grant control of the displayed wallets. Public account creation is disabled.
 
-The public records are embedded in [testnet-snapshot-data.ts](../apps/web/src/testnet-snapshot-data.ts). Account and transaction links open Stellar Testnet explorer pages. Balances and mandate rules were read from the chain during verification; the page clearly shows the verification timestamp and ledger. They are a historical snapshot, not live balances. Mandate expiry is shown as the exact on-chain ledger number.
+The public records are embedded in [testnet-snapshot-data.ts](../apps/web/src/testnet-snapshot-data.ts), including the verification timestamp and ledger. Account and transaction links open Stellar Testnet explorer pages. Balances and mandate rules were read from the chain during verification and represent a historical snapshot. Mandate expiry is shown as the exact on-chain ledger number.
 
 Warnings identify these as test accounts on a test network and prohibit adding real funds or connecting real accounts. Creation, mandate changes, funding, payments, and chat are disabled. The page never signs or submits a transaction.
 
-No account, mandate, transaction, request, or chat collections are saved in browser storage. Session storage holds only a one-character login flag; the theme preference may use local storage. The previous simulator's local data is discarded without parsing it.
+No account, mandate, transaction, request, or chat collections are saved in browser storage. The public dashboard opens without login or session storage; the theme preference may use local storage. API initialization discards the previous simulator's local data without parsing it.
 
 ## Fixed data limits
 
@@ -64,7 +64,7 @@ pnpm snapshot:testnet
 
 This explicit, read-only preparation step verifies the Testnet network passphrase, smart account existence, seller-registry status, actual mandate policies and limits, successful transaction receipts, envelope hashes, transfer details, and matching on-chain mandate spending history. It writes only public snapshot fields and uses no signing keys or database. A failed verification leaves the existing snapshot unchanged.
 
-Builds use the checked-in snapshot and do not query the network. If Testnet resets or records become unavailable, the displayed verification timestamp still identifies the historical observation; refresh requires available chain records.
+Builds use the checked-in snapshot and do not query the network. If Testnet resets or records become unavailable, the embedded verification timestamp still identifies the historical observation; refresh requires available chain records.
 
 ## Local preview and validation
 
