@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { api, ApiError } from "./api.ts";
-import { DEMO_LOGIN, READ_ONLY_MESSAGE } from "./demo.ts";
+import { useEffect, useState, type MouseEvent } from "react";
+import { DEMO_LOGIN, READ_ONLY_MESSAGE, TESTNET_SNAPSHOT } from "./demo.ts";
 import { SNAPSHOT_LIMITS, type TestnetSnapshot } from "./testnet-snapshot-types.ts";
-import { SignIn } from "./SignIn.tsx";
 import { SmartAccountAddress } from "./SmartAccountAddress.tsx";
 import { TestNetworkWarning } from "./TestNetworkWarning.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
@@ -13,43 +11,34 @@ const date = (value: string) => new Date(value).toLocaleString();
 const transactionsFor = (snapshot: TestnetSnapshot, address: string) => snapshot.transactions.filter(tx => tx.from === address || tx.to === address);
 
 export function StaticTestnetApp() {
-  const [snapshot, setSnapshot] = useState<TestnetSnapshot>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const load = useCallback(async () => {
-    try { setSnapshot(await api.testnetSnapshot()); setError(""); }
-    catch (cause) {
-      if (cause instanceof ApiError && cause.status === 401) setSnapshot(undefined);
-      else setError(cause instanceof Error ? cause.message : "Could not open the Testnet snapshot");
-    } finally { setLoading(false); }
+  const snapshot = TESTNET_SNAPSHOT;
+  const [pathname, setPathname] = useState(window.location.pathname);
+  useEffect(() => {
+    const onPopState = () => setPathname(window.location.pathname);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
-  useEffect(() => { void load(); }, [load]);
-  const logout = async () => {
-    try { await api.logout(); setSnapshot(undefined); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Could not sign out"); }
+  const navigate = (event: MouseEvent<HTMLElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = (event.target as Element).closest<HTMLAnchorElement>("a[href]");
+    if (!link || link.origin !== window.location.origin || link.target || link.hasAttribute("download")) return;
+    event.preventDefault();
+    if (link.pathname !== window.location.pathname) window.history.pushState(null, "", link.href);
+    setPathname(link.pathname);
+    window.scrollTo(0, 0);
   };
-  const path = window.location.pathname.replace(/\/$/, "");
+  const path = pathname.replace(/\/$/, "");
   const page = path === "/mandates" ? "mandates" : path === "/spending" || path === "/activity" ? "transactions" : path === "/agents" ? "signers" : path === "/pay" || path === "/chat" ? "readonly" : "accounts";
-  return <><TestNetworkWarning persistent /><div className="page payment-page">
-    <header className="glass topbar"><a className="brand" href="/"><Logo />Mandate</a><div className="topbar-side"><span className="pill">Stellar Testnet · snapshot</span>{snapshot && <><span className="owner"><span className="owner-name">{DEMO_LOGIN.name}</span></span><button className="button is-quiet" onClick={() => void logout()}>Sign out</button></>}<ThemeToggle /></div></header>
-    {error && <p className="banner is-bad" role="alert">{error}</p>}
-    {loading ? <p className="loading muted">Opening Testnet snapshot…</p> : !snapshot ? <SignIn onSignedIn={load} /> : <main className="testnet-snapshot">
-      <section className="card snapshot-summary" aria-label="Snapshot verification">
-        <p className="eyebrow">REAL TESTNET RECORDS · READ ONLY</p><h1>Testnet purchasing workspace</h1>
-        <p>Public smart accounts, mandate rules, and successful transfers verified on Stellar Testnet. This is a fixed snapshot, not a live balance.</p>
-        <p className="muted">USD is a Testnet token for demonstration; it is not redeemable money.</p>
-        <p className="muted">Verified <time dateTime={snapshot.capturedAt}>{date(snapshot.capturedAt)}</time> · ledger {snapshot.ledger}</p>
-        <p className="muted">TUser is the demo view label. Signing in does not grant control of these accounts.</p>
-        <p className="snapshot-limits">Maximum per user: {SNAPSHOT_LIMITS.accounts} accounts · {SNAPSHOT_LIMITS.mandates} mandates · {SNAPSHOT_LIMITS.transactionsPerAccount} transactions per account.</p>
-        <p className="muted">Included: {snapshot.accounts.length} accounts · {snapshot.mandates.length} mandates · {snapshot.transactions.length} distinct transactions. Records cannot be added from this page.</p>
-      </section>
+  return <><TestNetworkWarning persistent /><div className="page payment-page snapshot-page" onClick={navigate}>
+    <header className="glass topbar"><a className="brand" href="/"><Logo />Mandate</a><div className="topbar-side"><span className="snapshot-user-id">User ID: {DEMO_LOGIN.name}</span><ThemeToggle /></div></header>
+    <main className="testnet-snapshot">
       <nav className="glass workspace-tabs" aria-label="Workspace"><a href="/" aria-current={page === "accounts" ? "page" : undefined}>Accounts {snapshot.accounts.length}</a><a href="/mandates" aria-current={page === "mandates" ? "page" : undefined}>Mandates {snapshot.mandates.length}</a><a href="/spending" aria-current={page === "transactions" ? "page" : undefined}>Transactions {snapshot.transactions.length}</a><a href="/agents" aria-current={page === "signers" ? "page" : undefined}>Signer keys</a></nav>
       {page === "accounts" && <section aria-label="Testnet accounts"><div className="section-header"><h2>Accounts</h2><p className="muted">{snapshot.accounts.length} / {SNAPSHOT_LIMITS.accounts} maximum</p></div><ul className="agent-grid">{snapshot.accounts.map(account => <li className="card agent-card" key={account.address}>
         <h3>{account.label}</h3><p className="parent-amount">{money(account.balance, "USD")}</p><p className="verified">Verified Testnet Smart Account</p>
         <p className="muted">USD balance observed during verification · {transactionsFor(snapshot, account.address).length} / {SNAPSHOT_LIMITS.transactionsPerAccount} included transactions</p>
         <SmartAccountAddress address={account.address} />
         <a className="transaction-link" href={`${snapshot.explorerUrl}/contract/${account.address}`} target="_blank" rel="noreferrer">View account on Stellar ↗</a>
-        <p className="form-note">Test account only. Do not send real funds or connect real accounts.</p>
+        {snapshot.mandates.some(mandate => mandate.account === account.address) && <a className="button" href="/mandates">View mandates</a>}
         <div className="account-buttons"><button className="button" disabled>Add funds</button><button className="button" disabled>Make payment</button></div>
       </li>)}</ul></section>}
       {page === "mandates" && <section aria-label="Testnet mandates"><div className="section-header"><h2>Mandates</h2><p className="muted">{snapshot.mandates.length} / {SNAPSHOT_LIMITS.mandates} maximum</p></div><p className="form-note">These are actual context rules read from the purchasing Smart Account. Creation and changes are disabled in this static view.</p><ul className="agent-grid">{snapshot.mandates.map(mandate => <li className="card agent-card" key={`${mandate.account}:${mandate.ruleId}`}>
@@ -68,8 +57,7 @@ export function StaticTestnetApp() {
       </li>)}</ul></section>}
       {page === "signers" && <section><h2>On-chain signer public keys</h2><p className="form-note">Public keys read from the actual mandate rules. No private keys or agent credentials are included.</p><ul className="agent-grid">{snapshot.mandates.map(mandate => <li className="card agent-card" key={mandate.ruleId}><h3>{mandate.name} · rule {mandate.ruleId}</h3>{mandate.signerPublicKeys.map(key => <code className="snapshot-hash" key={key}>{key}</code>)}</li>)}</ul></section>}
       {page === "readonly" && <section className="card snapshot-summary"><h2>Read-only Testnet snapshot</h2><p>{READ_ONLY_MESSAGE}</p><a className="button" href="/spending">View confirmed transactions</a></section>}
-      <footer className="workspace-footer">{READ_ONLY_MESSAGE} No database or signing keys are deployed. The fixed snapshot has no growing user, request, chat, or transaction collections. Testnet data can change or be reset after the recorded verification time.</footer>
-    </main>}
+    </main>
   </div></>;
 }
 

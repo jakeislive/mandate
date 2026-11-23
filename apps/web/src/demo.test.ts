@@ -1,15 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { StrKey } from "@stellar/stellar-sdk";
-import { createDemo, DEMO_LOGIN, DEMO_SESSION_KEY, DemoError, TESTNET_SNAPSHOT } from "./demo.ts";
+import { createDemo, DEMO_LOGIN, DemoError, TESTNET_SNAPSHOT } from "./demo.ts";
 import { SNAPSHOT_LIMITS, validateSnapshot } from "./testnet-snapshot-types.ts";
 
 function fixture() {
-  const values = new Map<string, string>();
-  const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
-  const demo = createDemo(storage);
-  const login = () => demo.request("/auth/login", "POST", DEMO_LOGIN);
-  return { values, storage, demo, login };
+  return { demo: createDemo() };
 }
 const denied = (work: () => unknown, status: number) => assert.throws(work, error => error instanceof DemoError && error.status === status);
 
@@ -29,27 +25,20 @@ test("the snapshot contains real-format Testnet contracts, signer keys, and conf
   assert.equal(TESTNET_SNAPSHOT.accounts[0]!.balance, "72");
 });
 
-test("only the fixed login selects the public view; signup and credential changes are disabled", () => {
+test("the public view opens without login; signup and authentication actions are disabled", () => {
   const f = fixture();
-  denied(() => f.demo.request("/snapshot"), 401);
-  denied(() => f.demo.request("/auth/register", "POST", DEMO_LOGIN), 403);
-  denied(() => f.demo.request("/auth/login", "POST", { ...DEMO_LOGIN, password: "wrong-password" }), 401);
-  assert.deepEqual(f.demo.request("/auth/login", "POST", DEMO_LOGIN), { id: "testnet-public-view", email: DEMO_LOGIN.email, name: "TUser" });
   assert.deepEqual(f.demo.request("/snapshot"), TESTNET_SNAPSHOT);
-  assert.deepEqual([...f.values], [[DEMO_SESSION_KEY, "1"]]);
+  denied(() => f.demo.request("/auth/register", "POST", DEMO_LOGIN), 403);
+  denied(() => f.demo.request("/auth/login", "POST", DEMO_LOGIN), 405);
+  denied(() => f.demo.request("/auth/logout", "POST"), 405);
 });
 
-test("only the bounded login flag persists; no account or transaction records are stored", () => {
-  const f = fixture(); f.login();
-  const restored = createDemo(f.storage);
-  assert.deepEqual(restored.request("/snapshot"), TESTNET_SNAPSHOT);
-  restored.request("/auth/logout", "POST");
-  denied(() => f.demo.request("/snapshot"), 401);
-  assert.deepEqual([...f.values], [[DEMO_SESSION_KEY, "0"]]);
+test("a fresh public view needs no session state", () => {
+  assert.deepEqual(createDemo().request("/snapshot"), TESTNET_SNAPSHOT);
 });
 
 test("snapshot results cannot mutate the immutable embedded records", () => {
-  const f = fixture(); f.login();
+  const f = fixture();
   const copy = f.demo.request("/snapshot") as typeof TESTNET_SNAPSHOT;
   copy.accounts[0]!.balance = "999999";
   copy.transactions.length = 0;
@@ -60,7 +49,7 @@ test("snapshot results cannot mutate the immutable embedded records", () => {
 });
 
 test("mutation attempts never create account, mandate, transaction, request, agent or chat collections", () => {
-  const f = fixture(); f.login();
+  const f = fixture();
   const paths = ["/accounts/open", "/accounts/test/funding", "/mandates", "/agents", "/workflows", "/payments", "/pay", "/chat/sessions", "/chat/sessions/x/messages"];
   const unsupported = { requestId: "malicious-request", amount: "1000000", name: "Attempted creation" };
   for (let i = 0; i < 100; i++) for (const path of paths) denied(() => f.demo.request(path, "POST", unsupported), 405);
@@ -68,8 +57,6 @@ test("mutation attempts never create account, mandate, transaction, request, age
   denied(() => f.demo.request("/mandates/example", "DELETE"), 405);
   denied(() => f.demo.request("/accounts", "GET"), 404);
   assert.deepEqual(f.demo.request("/snapshot"), TESTNET_SNAPSHOT);
-  assert.equal(f.values.size, 1);
-  assert.equal(f.values.get(DEMO_SESSION_KEY), "1");
 });
 
 test("the public snapshot refuses more than five accounts per user", () => {
