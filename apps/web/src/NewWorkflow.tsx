@@ -9,7 +9,6 @@ import { ConnectSteps } from "./ConnectSteps.tsx";
 import { Dialog } from "./Dialog.tsx";
 import { money } from "./format.ts";
 import { agentBrief, periodWords, templates, type Template } from "./workflows.ts";
-import { IS_STATIC_DEMO } from "./demo-mode.ts";
 
 export function NewWorkflow({ workspace, onDone, onClose }: { workspace: PaymentWorkspace; onDone: () => Promise<void>; onClose: () => void }) {
   const vendors = workspace.vendors ?? [];
@@ -44,7 +43,6 @@ export function NewWorkflow({ workspace, onDone, onClose }: { workspace: Payment
   const close = () => { if (!busy) onClose(); };
 
   if (created && template) {
-    if (IS_STATIC_DEMO) return <Dialog title="Demo workflow created" onClose={onClose}><div className="form"><p>{name} is ready with a simulated agent and a {money(limit, "USD")} budget every {periodWords[period]}. View its mandate in the dashboard.</p><button className="button is-primary" onClick={onClose}>Done</button></div></Dialog>;
     const { customer } = workspace;
     const brief = created.pairing?.code ? agentBrief({ workflow: name, job: template.job, company: customer.company, team: customer.team, owner: customer.name, code: created.pairing.code }) : undefined;
     return <Dialog title={`Connect the ${name} agent`} onClose={onClose}><div className="form">
@@ -69,9 +67,9 @@ export function NewWorkflow({ workspace, onDone, onClose }: { workspace: Payment
       <legend>Approved vendors</legend>
       {vendors.length === 0 ? <p className="muted">No vendors are listed yet. This workflow will be able to pay any verified seller.</p> : vendors.map(vendor => <label className="choice" key={vendor.sellerId}>
         <input type="checkbox" checked={chosen.includes(vendor.sellerId)} onChange={() => toggle(vendor.sellerId)} />
-        <span><strong>{vendor.name}</strong><small className="muted">{vendor.category} · {IS_STATIC_DEMO ? "demo vendor" : "verified on Stellar"}</small></span>
+        <span><strong>{vendor.name}</strong><small className="muted">{vendor.category} · verified on Stellar</small></span>
       </label>)}
-      <p className="muted">{IS_STATIC_DEMO ? "The demo agent can pay only the vendors you select. This is simulated locally." : chosen.length ? "The agent can pay only these vendors. The list is written into its mandate on Stellar." : "With none selected, the agent can pay any verified seller."}</p>
+      <p className="muted">{chosen.length ? "The agent can pay only these vendors. The list is written into its mandate on Stellar." : "With none selected, the agent can pay any verified seller."}</p>
     </fieldset>
     <div className="field-row">
       <label className="field">Budget (USD)<input required inputMode="decimal" pattern="[0-9]+(\.[0-9]{1,2})?" disabled={busy} value={limit} onChange={event => change(() => setLimit(event.target.value))} placeholder="300" /></label>

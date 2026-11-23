@@ -2,7 +2,7 @@
 
 Purchasing agents for teams, inside rules the agents cannot break.
 
-This demo runs entirely in the browser with a fixed TUser login, sample accounts, mandates, and transactions. Its payments and policy checks are simulated, and changes stay in browser storage. No real accounts, funds, signing keys, or blockchain transactions are used. The technology and architecture below describe the full application source, which remains available alongside the static demo.
+This branch displays a fixed, read-only snapshot of real Stellar Testnet smart accounts, mandate rules, and confirmed transactions, with a one-button TUser login. Public data is embedded in the webpage; no database or signing keys are deployed. The snapshot is capped at five accounts and five mandates per user, with five transactions per account. Creation, funding, and payment actions are disabled. The technology and architecture below describe the full application source, which remains available alongside this static view.
 
 ## Product
 

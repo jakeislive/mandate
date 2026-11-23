@@ -1,6 +1,7 @@
 import type { AccountAgent, AccountMandate, CreateWorkflowInput, FiatCheckout, FiatFundingStatus, FundingMethod, MandateCreation, CreateAccountMandateInput, Customer, MandatePaymentInput, MandatePaymentPreview, MandatePaymentResult, PaymentChatState, PaymentEntry, PaymentNetwork, PaymentWorkspace, SpendingAccount } from "@mandate/shared";
 import { createDemo, DEMO_LOGIN, DemoError } from "./demo.ts";
 import { IS_STATIC_DEMO } from "./demo-mode.ts";
+import type { TestnetSnapshot } from "./testnet-snapshot-types.ts";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -9,11 +10,15 @@ let demo: ReturnType<typeof createDemo> | undefined;
 async function request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
   if (IS_STATIC_DEMO) {
     try {
-      demo ??= createDemo(window.localStorage);
+      if (!demo) {
+        // Discard the previous simulator's state without reading or parsing it.
+        try { window.localStorage.removeItem("mandate.static-demo.v1"); } catch { /* No record storage is required. */ }
+        demo = createDemo(window.sessionStorage);
+      }
       return demo.request(path, method, body as Record<string, unknown> | undefined) as T;
     } catch (error) {
       if (error instanceof DemoError) throw new ApiError(error.status, error.message);
-      throw new Error("The demo could not save data in this browser. Enable local storage and try again.");
+      throw new Error("The Testnet view could not open. Enable session storage and try again.");
     }
   }
   let response: Response;
@@ -27,6 +32,7 @@ async function request<T>(path: string, method = "GET", body?: unknown): Promise
   return (response.status === 204 ? undefined : await response.json()) as T;
 }
 export const api = {
+  testnetSnapshot: () => request<TestnetSnapshot>("/snapshot"),
   openChat: () => request<PaymentChatState>("/chat/sessions", "POST"),
   chatState: (id: string) => request<PaymentChatState>(`/chat/sessions/${encodeURIComponent(id)}`),
   sendChat: (id: string, message: string) => request<PaymentChatState>(`/chat/sessions/${encodeURIComponent(id)}/messages`, "POST", { message }),

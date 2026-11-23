@@ -1,97 +1,82 @@
 import { expect, test, type Page } from "@playwright/test";
+import { snapshotData } from "../src/testnet-snapshot-data.ts";
 
 async function login(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: "Login", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Main account", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Testnet accounts", exact: true })).toBeVisible();
 }
 
-test("one-click login opens seeded accounts without API requests or signup", async ({ page }) => {
+test("one-click login displays fixed real Testnet records without API calls, databases or signup", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", request => { if (new URL(request.url()).pathname.startsWith("/api")) requests.push(request.url()); });
+  await page.addInitScript(() => { localStorage.setItem("mandate.static-demo.v1", "untrusted old simulation".repeat(10_000)); });
   await page.goto("/");
   await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible();
   await expect(page.getByRole("textbox")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /create account/i })).toHaveCount(0);
-  await expect(page.getByLabel("Test network warning").first()).toContainText("Do not add real funds or connect real accounts");
   await page.getByRole("button", { name: "Login", exact: true }).click();
   await expect(page.locator(".owner-name")).toHaveText("TUser");
-  await expect(page.getByRole("region", { name: "Main account", exact: true })).toContainText("4784 USD");
-  await expect(page.getByRole("region", { name: "Demo vendor accounts" }).getByRole("heading", { name: "Seatwise" })).toBeVisible();
-  await page.screenshot({ path: test.info().outputPath("dashboard.png"), fullPage: true });
-  await page.getByRole("link", { name: "Spending", exact: true }).click();
-  await expect(page.locator(".stat-row")).toContainText("216 USD");
-  await expect(page.getByRole("link", { name: /View transaction/ })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Snapshot verification" })).toContainText("2 accounts · 2 mandates · 3 distinct transactions");
+  await expect(page.getByRole("region", { name: "Testnet accounts" })).toContainText("72 USD");
+  await expect(page.getByRole("region", { name: "Testnet accounts" }).getByRole("link", { name: /View account on Stellar/ })).toHaveCount(2);
+  expect(await page.evaluate(() => localStorage.getItem("mandate.static-demo.v1"))).toBeNull();
+  expect(await page.evaluate(() => Object.entries(sessionStorage))).toEqual([["mandate.testnet-snapshot.session", "1"]]);
+  await page.screenshot({ path: test.info().outputPath("testnet-accounts.png"), fullPage: true });
   await page.reload();
   await expect(page.locator(".owner-name")).toHaveText("TUser");
   expect(requests).toEqual([]);
 });
 
-test("funding and payment warnings remain visible and changes persist after reload", async ({ page }) => {
+test("real mandate limits and expiry ledgers are shown without mutation controls", async ({ page }) => {
   await login(page);
-  await page.getByRole("button", { name: "Add funds", exact: true }).click();
-  const funding = page.getByRole("dialog", { name: "Add funds", exact: true });
-  await expect(funding.getByLabel("Test network warning")).toBeVisible();
-  await funding.getByLabel("Amount (USD)", { exact: true }).fill("10.50");
-  await funding.getByRole("button", { name: "Add funds", exact: true }).click();
-  await expect(funding).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Main account", exact: true })).toContainText("4794.5 USD");
-  await page.getByRole("button", { name: "Make payment", exact: true }).click();
-  const payment = page.getByRole("dialog", { name: "Make a payment", exact: true });
-  await expect(payment.getByLabel("Test network warning")).toBeVisible();
-  await payment.getByRole("combobox", { name: "Recipient Smart Account address", exact: true }).selectOption({ label: "Seatwise" });
-  await payment.getByLabel("Payment reference", { exact: true }).fill("Browser demo purchase");
-  await payment.getByLabel("Amount (USD)", { exact: true }).fill("1.25");
-  await payment.getByRole("button", { name: "Confirm payment", exact: true }).click();
-  await expect(payment).toHaveCount(0);
-  await page.reload();
-  await expect(page.getByRole("region", { name: "Main account", exact: true })).toContainText("4793.25 USD");
+  await page.getByRole("link", { name: "Mandates 2", exact: true }).click();
+  const mandates = page.getByRole("region", { name: "Testnet mandates", exact: true });
+  for (const mandate of snapshotData.mandates) {
+    await expect(mandates.getByRole("heading", { name: mandate.name, exact: true })).toBeVisible();
+    await expect(mandates).toContainText(`Rule ${mandate.ruleId}`);
+    await expect(mandates).toContainText(`Expires at ledger ${mandate.validUntilLedger}`);
+  }
+  await expect(page.getByRole("button", { name: /New mandate|Create mandate|Change limit|Revoke/ })).toHaveCount(0);
 });
 
-test("mandate and workflow creation stay simulated and usable", async ({ page }) => {
+test("each receipt links to its actual confirmed Testnet transaction and CSV retains its hash", async ({ page }) => {
   await login(page);
-  await page.getByRole("link", { name: /^Mandates/ }).click();
-  await page.getByRole("button", { name: "New mandate", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "New mandate", exact: true });
-  await expect(dialog.getByLabel("Test network warning")).toBeVisible();
-  await dialog.getByLabel("Mandate name", { exact: true }).fill("Browser demo allowance");
-  await dialog.getByLabel("Spending limit (USD)", { exact: true }).fill("25");
-  await dialog.getByRole("button", { name: "Create mandate", exact: true }).click();
-  await expect(dialog.getByRole("heading", { name: "Mandate created", exact: true })).toBeVisible();
-  await dialog.getByRole("button", { name: "Done", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Browser demo allowance", exact: true })).toBeVisible();
-  await page.getByRole("link", { name: /^Workflows/ }).click();
-  await page.getByRole("button", { name: "New purchasing workflow", exact: true }).click();
-  const workflow = page.getByRole("dialog", { name: "New purchasing workflow", exact: true });
-  await workflow.getByRole("button", { name: /Office supplies/ }).click();
-  await expect(workflow.getByLabel("Test network warning")).toBeVisible();
-  await workflow.getByLabel("Workflow name", { exact: true }).fill("Browser supplies");
-  await workflow.getByRole("button", { name: "Set up workflow", exact: true }).click();
-  await page.getByRole("dialog", { name: "Demo workflow created", exact: true }).getByRole("button", { name: "Done", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Browser supplies", exact: true, level: 2 })).toBeVisible();
+  await page.getByRole("link", { name: "Transactions 3", exact: true }).click();
+  const transactions = page.getByRole("region", { name: "Confirmed Testnet transactions", exact: true });
+  await expect(transactions.getByRole("link", { name: "View confirmed transaction", exact: false })).toHaveCount(3);
+  for (const tx of snapshotData.transactions) await expect(transactions.locator(`a[href="${snapshotData.explorerUrl}/tx/${tx.hash}"]`)).toBeVisible();
+  await expect(transactions).toContainText("Confirmed on Stellar Testnet");
+  const downloaded = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export CSV", exact: true }).click();
+  const download = await downloaded;
+  const stream = await download.createReadStream();
+  let csv = "";
+  for await (const chunk of stream) csv += chunk.toString();
+  for (const tx of snapshotData.transactions) expect(csv).toContain(tx.hash);
+  expect(csv).toContain("stellar:testnet");
+  expect(csv).not.toContain("simulated");
 });
 
-test("public payment and chat work without a backend with explicit demo warnings", async ({ page }) => {
+test("creation, funding, payments and chat cannot grow the fixed snapshot", async ({ page }) => {
   await login(page);
-  await page.goto("/pay");
-  const form = page.locator(".pay-form");
-  await expect(form.getByLabel("Test network warning")).toBeVisible();
-  await page.getByRole("button", { name: "Use demo payment details", exact: true }).click();
-  await page.getByRole("button", { name: "Check mandate & seller", exact: true }).click();
-  await page.getByRole("button", { name: "Make payment", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Payment succeeded", exact: true })).toBeVisible();
-  await page.goto("/chat");
-  await page.getByLabel("Message", { exact: true }).fill("Pay 0.20 USD to Seatwise");
-  await page.getByRole("button", { name: "Send message", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Payment succeeded", exact: true })).toBeVisible();
-  await expect(page.locator(".chat-result")).toContainText("0.2 USD");
+  for (const button of await page.getByRole("button", { name: /Add funds|Make payment/ }).all()) await expect(button).toBeDisabled();
+  await expect(page.getByLabel("Test network warning").first()).toContainText("Do not add real funds or connect real accounts");
+  await expect(page.getByLabel("Test network warning").first()).toContainText("real Stellar Testnet records");
+  for (const path of ["/pay", "/chat"]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { name: "Read-only Testnet snapshot", exact: true })).toBeVisible();
+    await expect(page.getByRole("textbox")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Make payment|Send message/ })).toHaveCount(0);
+  }
+  await page.goto("/");
+  await expect(page.getByRole("region", { name: "Snapshot verification" })).toContainText("2 accounts · 2 mandates · 3 distinct transactions");
 });
 
-test("demo remains usable on a narrow mobile screen", async ({ page }) => {
+test("bounded Testnet records remain usable on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await login(page);
   await expect(page.getByLabel("Test network warning").first()).toBeVisible();
-  await expect(page.getByRole("region", { name: "Demo vendor accounts" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  await page.screenshot({ path: test.info().outputPath("mobile-dashboard.png"), fullPage: true });
+  await page.screenshot({ path: test.info().outputPath("mobile-testnet-accounts.png"), fullPage: true });
 });

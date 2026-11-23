@@ -29,7 +29,8 @@
     "test:chain": "node --env-file=.env scripts/test-live-payments.ts",
     "test:agents": "node --env-file=.env scripts/test-live-agents.ts",
     "test:contracts": "cargo test --manifest-path contracts/Cargo.toml --workspace",
-    "build": "pnpm --filter @mandate/web build",
+    "build": "node scripts/check-testnet-snapshot.ts && pnpm --filter @mandate/web build",
+    "snapshot:testnet": "node scripts/snapshot-testnet.ts",
     "test:ui": "pnpm --filter @mandate/web test:ui",
     "test:demo": "pnpm --filter @mandate/web test:demo",
     "test:ui:demo": "pnpm --filter @mandate/web test:ui:demo"
