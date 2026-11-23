@@ -1,5 +1,6 @@
 // Purchasing workflows: each one is an agent that holds its own key, plus the
 // mandate that says what it may spend and with which vendors.
+import { IS_STATIC_DEMO } from "./demo-mode.ts";
 import { useState } from "react";
 import type { AccountAgent, AccountMandate, PaymentWorkspace } from "@mandate/shared";
 import { api } from "./api.ts";
@@ -45,10 +46,10 @@ function WorkflowCard({ agent, workspace, tone, onDone }: { agent: AccountAgent;
   };
   const brief = agent.pairing?.code ? agentBrief({ workflow: title, job: template.job, company: workspace.customer.company, team: workspace.customer.team, owner: workspace.customer.name, code: agent.pairing.code }) : undefined;
   return <li className="card workflow-card">
-    <div className="workflow-heading"><div><h2>{title}</h2><p className={agent.status === "connected" && agent.verified ? "verified" : "muted"}>{agent.status === "waiting" ? "Waiting for its agent to connect" : agent.verified ? `${agent.name} · own key, verified on chain` : `${agent.name} · connected, not yet confirmed on chain`}</p></div>{category && <span className="pill">{category}</span>}</div>
+    <div className="workflow-heading"><div><h2>{title}</h2><p className={agent.status === "connected" && agent.verified ? "verified" : "muted"}>{agent.status === "waiting" ? "Waiting for its agent to connect" : agent.verified ? `${agent.name} · ${IS_STATIC_DEMO ? "simulated agent" : "own key, verified on chain"}` : `${agent.name} · connected, not yet confirmed on chain`}</p></div>{category && <span className="pill">{category}</span>}</div>
     {mandates.length > 0 && <ul className="workflow-mandates">{mandates.map((mandate, index) => <MandateCard key={mandate.reference} mandate={mandate} tone={tone + index}>
       <p className="muted">Approved vendors: {sellerLine(mandate, vendors)}</p>
-      <p className="muted">Runs until {new Date(mandate.expiresAt).toLocaleDateString()} · enforced on Stellar</p>
+      <p className="muted">Runs until {new Date(mandate.expiresAt).toLocaleDateString()} · {IS_STATIC_DEMO ? "simulated rules" : "enforced on Stellar"}</p>
       <div className="account-buttons"><button className="button" onClick={() => setEditing(mandate)}>Change budget</button></div>
     </MandateCard>)}</ul>}
     {pending.map(draft => <p className="form-note" key={draft.name}>Budget ready: {money(draft.limit, "USD")} every {periodWords[draft.period]}. Vendors: {sellerLine(draft, vendors)}. It goes on Stellar when the agent connects.</p>)}

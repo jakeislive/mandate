@@ -5,6 +5,9 @@ import { api } from "./api.ts";
 import { SmartAccountAddress } from "./SmartAccountAddress.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
 import { Logo } from "./icons.tsx";
+import { IS_STATIC_DEMO } from "./demo-mode.ts";
+import { DEMO_PAYMENT } from "./demo.ts";
+import { TestNetworkWarning } from "./TestNetworkWarning.tsx";
 
 export function PayPage() {
   const [network, setNetwork] = useState<PaymentNetwork>();
@@ -58,15 +61,17 @@ export function PayPage() {
     <main className="public-pay">
       <div className="page-title"><p className="eyebrow">THIRD-PARTY PAYMENT</p><h1>Pay with a mandate.</h1><p className="muted">Use a mandate to pay a verified Smart Account. No owner login is required.</p></div>
       <section className="card"><form className="form pay-form" onSubmit={event => void check(event)}>
+        <TestNetworkWarning />
+        {IS_STATIC_DEMO && <button type="button" className="button" disabled={locked} onClick={() => change(() => { setMandateId(DEMO_PAYMENT.mandateId); setAgentId(DEMO_PAYMENT.agentId); setSellerAddress(DEMO_PAYMENT.sellerAddress); setSellerName(DEMO_PAYMENT.sellerName); setAmount("0.20"); setReference("Sample static demo payment"); })}>Use demo payment details</button>}
         <fieldset className="field pay-fieldset"><legend>Mandate details</legend>
           <label className="field">Mandate ID<input type="password" required maxLength={128} value={mandateId} disabled={locked} onChange={e => change(() => setMandateId(e.target.value))} autoComplete="off" spellCheck={false} autoCapitalize="none" placeholder="mnd_…" /></label>
           <label className="field">Agent identification<input required maxLength={128} value={agentId} disabled={locked} onChange={e => change(() => setAgentId(e.target.value))} autoComplete="off" spellCheck={false} autoCapitalize="none" placeholder="agt_…" /></label>
-          <p className="muted">Your agent identification must be registered to the source account on chain. Your mandate ID is secret and authorizes this payment. It selects the source account. All payments use USD. Check the details before paying.</p>
+          <p className="muted">{IS_STATIC_DEMO ? "Use demo credentials only. The sample details fill a simulated mandate and agent in this browser. No real payments are authorized." : "Your agent identification must be registered to the source account on chain. Your mandate ID is secret and authorizes this payment. It selects the source account. All payments use USD. Check the details before paying."}</p>
         </fieldset>
         <fieldset className="field pay-fieldset"><legend>Seller details</legend>
           <label className="field">Seller name<input required maxLength={120} value={sellerName} disabled={locked} onChange={e => change(() => setSellerName(e.target.value))} placeholder="Seller display name" /></label>
           <label className="field">Seller Smart Account address<input required maxLength={56} value={sellerAddress} disabled={locked} onChange={e => change(() => setSellerAddress(e.target.value))} placeholder="C…" /></label>
-          <p className="muted">Copy the seller’s Smart Account address from their dashboard. The address is checked against the on-chain registry.</p>
+          <p className="muted">{IS_STATIC_DEMO ? "Only the fixed demo vendor addresses are accepted. Do not enter real account details." : "Copy the seller’s Smart Account address from their dashboard. The address is checked against the on-chain registry."}</p>
         </fieldset>
         <div className="field-row"><label className="field">Amount (USD)<input required inputMode="decimal" pattern="[0-9]+(\.[0-9]{1,7})?" value={amount} disabled={locked} onChange={e => change(() => setAmount(e.target.value))} placeholder="0.10" /></label><label className="field">Payment reference<input required maxLength={200} value={reference} disabled={locked} onChange={e => change(() => setReference(e.target.value))} placeholder="What are you paying for?" /></label></div>
         {preview && <div className="pay-checks"><h2>{preview.mandate.name}</h2><p className="muted">Agent: {preview.agent.name} · {preview.agent.id}</p><SmartAccountAddress address={preview.mandate.address} label="Source Smart Account address" /><p className="muted">{formatValue(preview.mandate.spent, preview.currency)} of {money(preview.mandate.limit, preview.currency)} used · expires {new Date(preview.mandate.expiresAt).toLocaleString()}</p><ul>{preview.checks.map(item => <li key={item.label} className={item.passed ? "check-pass" : "check-fail"}><span aria-hidden="true">{item.passed ? "✓" : "×"}</span> {item.label}</li>)}</ul><p className="muted">Checks are a preview. The contract validates the actual payment at submission.</p></div>}
@@ -77,9 +82,9 @@ export function PayPage() {
           {result.status === "pending" && <><p>Retry confirmation with the same request ID. Do not create another payment while this one is unconfirmed.</p><a href={`${network?.explorerUrl}/tx/${result.txHash}`} target="_blank" rel="noreferrer">View pending transaction ↗</a></>}
         </div>}
         <p className="workspace-note">Request ID: <code>{requestId}</code>. An unchanged retry is processed once.</p>
-        <div className="form-actions">{completed ? <button className="button" type="button" onClick={() => { setResult(null); setPreview(null); setAmount(""); setReference(""); setRequestId(crypto.randomUUID()); }}>Start another payment</button> : <><button className="button" type="submit" value="check" disabled={!!busy || pending}>{busy === "check" ? "Checking…" : "Check mandate & seller"}</button><button className="button is-primary" type="submit" value="pay" disabled={!!busy || !network?.mandates || (!pending && !preview?.checks.every(check => check.passed))}>{busy === "pay" ? "Confirming on Stellar…" : pending ? "Check confirmation" : "Make payment"}</button></>}</div>
+        <div className="form-actions">{completed ? <button className="button" type="button" onClick={() => { setResult(null); setPreview(null); setAmount(""); setReference(""); setRequestId(crypto.randomUUID()); }}>Start another payment</button> : <><button className="button" type="submit" value="check" disabled={!!busy || pending}>{busy === "check" ? "Checking…" : "Check mandate & seller"}</button><button className="button is-primary" type="submit" value="pay" disabled={!!busy || !network?.mandates || (!pending && !preview?.checks.every(check => check.passed))}>{busy === "pay" ? (IS_STATIC_DEMO ? "Saving demo payment…" : "Confirming on Stellar…") : pending ? "Check confirmation" : "Make payment"}</button></>}</div>
       </form></section>
-      <p className="workspace-note">All payments settle on Stellar testnet. The mandate identifies the source account. Agent identification is verified on chain. All payments use USD. A payment can be declined for an invalid mandate ID, an expired or revoked mandate, an unverified or incompatible recipient, an exceeded limit, or insufficient funds.</p>
+      <p className="workspace-note">{IS_STATIC_DEMO ? "All activity here is simulated. Payments update browser-local demo balances; they do not settle on Stellar or move real money." : "All payments settle on Stellar testnet. The mandate identifies the source account. Agent identification is verified on chain. All payments use USD. A payment can be declined for an invalid mandate ID, an expired or revoked mandate, an unverified or incompatible recipient, an exceeded limit, or insufficient funds."}</p>
     </main>
   </div>;
 }

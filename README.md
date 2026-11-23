@@ -2,6 +2,8 @@
 
 Purchasing agents for teams, inside rules the agents cannot break.
 
+This demo runs entirely in the browser with a fixed TUser login, sample accounts, mandates, and transactions. Its payments and policy checks are simulated, and changes stay in browser storage. No real accounts, funds, signing keys, or blockchain transactions are used. The technology and architecture below describe the full application source, which remains available alongside the static demo.
+
 ## Product
 
 Mandate gives teams purchasing agents with defined budgets and approved vendors. Agents connect with their own keys, and Stellar smart contracts enforce their payment rules. Finance teams can review spending, declined attempts, and receipts.

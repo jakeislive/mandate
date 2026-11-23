@@ -340,14 +340,14 @@ test("failed clipboard access never reveals a mandate ID", async ({ page }) => {
   expect(await copiedValues(page)).toEqual([]);
 });
 
-test("signup leads directly to one main account with mandates and activity", async ({ page }) => {
+test("one-click demo login leads directly to the main account with mandates and activity", async ({ page }) => {
   let signedIn = false;
   let openingRequests = 0;
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
     if (path === "/api/network") return route.fulfill({ json: { network } });
-    if (path === "/api/auth/register") {
-      expect(route.request().postDataJSON()).toEqual({ name: "Owner", email: "owner@example.com", password: "a secure owner password" });
+    if (path === "/api/auth/login") {
+      expect(route.request().postDataJSON()).toEqual({ email: "test@testing.com", password: "testing1234567890" });
       signedIn = true;
       return route.fulfill({ status: 201, json: workspace.customer });
     }
@@ -356,11 +356,9 @@ test("signup leads directly to one main account with mandates and activity", asy
     return route.fulfill({ status: 404, json: { error: "Unexpected request" } });
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "New here? Create an account", exact: true }).click();
-  await page.getByLabel("Your name", { exact: true }).fill("Owner");
-  await page.getByLabel("Email", { exact: true }).fill("owner@example.com");
-  await page.getByLabel("Password", { exact: true }).fill("a secure owner password");
-  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Create account", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Login", exact: true }).click();
   const summary = page.getByRole("region", { name: "Main account", exact: true });
   await expect(summary).toContainText("100 USD");
   await expect(summary.getByRole("button", { name: "Add funds", exact: true })).toBeVisible();

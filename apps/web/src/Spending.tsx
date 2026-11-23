@@ -1,5 +1,6 @@
 // What the team's agents spent, by workflow and vendor, what the account
 // refused, and every receipt. Exports a CSV for finance.
+import { IS_STATIC_DEMO } from "./demo-mode.ts";
 import type { CSSProperties } from "react";
 import type { AccountAgent, AccountMandate, PaymentDecline, PaymentEntry, PaymentWorkspace, Vendor } from "@mandate/shared";
 import { formatAmount, toBaseUnits } from "@mandate/shared";
@@ -61,7 +62,7 @@ export function Spending({ workspace }: { workspace: PaymentWorkspace }) {
     <ul className="stat-row">
       <li className="card stat"><p className="eyebrow">Spent by agents · last {DAYS} days</p><p className="stat-value">{money(total(payments), "USD")}</p><p className="muted">{payments.length} {payments.length === 1 ? "purchase" : "purchases"}</p></li>
       <li className="card stat"><p className="eyebrow">Refused by your rules</p><p className="stat-value">{recentDeclines.length}</p><p className="muted">{recentDeclines.length ? `${money(total(recentDeclines), "USD")} was not paid` : "Nothing refused"}</p></li>
-      <li className="card stat"><p className="eyebrow">Active mandates</p><p className="stat-value">{workspace.mandates.filter(mandate => mandate.status === "active").length}</p><p className="muted">Each one enforced on Stellar</p></li>
+      <li className="card stat"><p className="eyebrow">Active mandates</p><p className="stat-value">{workspace.mandates.filter(mandate => mandate.status === "active").length}</p><p className="muted">{IS_STATIC_DEMO ? "Simulated spending rules" : "Each one enforced on Stellar"}</p></li>
     </ul>
     {payments.length > 0 && <div className="breakdowns">
       <Breakdown title="By workflow" rows={byWorkflow} />
@@ -86,11 +87,11 @@ function Decline({ decline, vendor, mandate, agent }: { decline: PaymentDecline;
 function Receipt({ entry, workspace, vendor, mandate, agent }: { entry: PaymentEntry; workspace: PaymentWorkspace; vendor: string; mandate?: string; agent?: AccountAgent }) {
   const funding = entry.kind === "funding";
   return <li><span className="ledger-symbol" aria-hidden="true">{funding ? "+" : "↗"}</span><div className="ledger-main">
-    <strong>{funding ? `Account funded · ${entry.source === "Stellar testnet funding" ? "Testnet" : "FIAT"}` : entry.reference}</strong>
+    <strong>{funding ? `Account funded · ${IS_STATIC_DEMO ? "simulated" : entry.source === "Stellar testnet funding" ? "Testnet" : "FIAT"}` : entry.reference}</strong>
     <p className="muted">{funding ? workspace.accounts.find(account => account.id === entry.accountId)?.name ?? "Previous account activity" : [vendor, mandate].filter(Boolean).join(" · ")}</p>
     {entry.agentId && <p className="muted">Agent: {agent?.name ?? entry.agentId} · {entry.agentId}</p>}
     {entry.kind === "payment" && <SmartAccountAddress address={entry.destination} label="Recipient Smart Account address" />}
-    <small className="muted">{new Date(entry.createdAt).toLocaleString()} · {entry.settlement === "traditional-demo" ? "Banking demo · simulated" : "Stellar testnet"}{entry.mandateReference ? " · Via mandate" : ""}</small>
+    <small className="muted">{new Date(entry.createdAt).toLocaleString()} · {IS_STATIC_DEMO ? "Test network · simulated" : entry.settlement === "traditional-demo" ? "Banking demo · simulated" : "Stellar testnet"}{entry.mandateReference ? " · Via mandate" : ""}</small>
     {entry.explorerUrl && <p><a className="transaction-link" href={entry.explorerUrl} target="_blank" rel="noreferrer">View transaction ↗</a></p>}
   </div><strong className="ledger-amount">{money(entry.amount, entry.currency)}</strong></li>;
 }

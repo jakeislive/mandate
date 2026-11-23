@@ -4,9 +4,11 @@ import { api, ApiError } from "./api.ts";
 import { money } from "./format.ts";
 import { Logo } from "./icons.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
+import { IS_STATIC_DEMO } from "./demo-mode.ts";
+import { TestNetworkWarning } from "./TestNetworkWarning.tsx";
 
 const hideMandate = (text: string) => text.replace(/mnd_[\w-]+/g, "[mandate hidden]");
-const example = "Pay 0.20 USD to seller C_REPLACE_WITH_SELLER_SMART_ACCOUNT_ADDRESS";
+const example = IS_STATIC_DEMO ? "Pay 0.20 USD to Seatwise" : "Pay 0.20 USD to seller C_REPLACE_WITH_SELLER_SMART_ACCOUNT_ADDRESS";
 
 export function ChatPage() {
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
@@ -74,10 +76,11 @@ export function ChatPage() {
   return <div className="page payment-page">
     <header className="glass topbar"><a className="brand" href="/"><Logo />Mandate</a><div className="topbar-side"><a className="button" href="/pay">Pay</a><a className="button" href="/">Dashboard</a><ThemeToggle /></div></header>
     <main className="chat-page">
-      <div className="section-header"><div className="page-title"><p className="eyebrow">LANGCHAIN · STELLAR TESTNET</p><h1>Chat to pay.</h1><p className="muted">Tell your payment agent what you need. It will ask for any missing details.</p></div><button className="button" disabled={busy || needsCheck} onClick={reset}>New chat</button></div>
+      <TestNetworkWarning />
+      <div className="section-header"><div className="page-title"><p className="eyebrow">{IS_STATIC_DEMO ? "LOCAL DEMO ASSISTANT" : "LANGCHAIN · STELLAR TESTNET"}</p><h1>Chat to pay.</h1><p className="muted">Tell your payment agent what you need. It will ask for any missing details.</p></div><button className="button" disabled={busy || needsCheck} onClick={reset}>New chat</button></div>
       <section className="card chat-panel" aria-label="Payment chat">
         <div ref={conversation} className="chat-messages" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions">
-          <article className="chat-message assistant"><p className="eyebrow">Payment agent</p><p>I can help you make a USD payment. Tell me the amount and seller Smart Account address. Signed-in chats use your default agent and $1 daily chat mandate. If you're not signed in, include your mandate ID and agent identification.</p><p className="muted">One payment per chat. Asking me to pay authorizes the payment.</p></article>
+          <article className="chat-message assistant"><p className="eyebrow">Payment agent</p><p>{IS_STATIC_DEMO ? "Sign in to the demo workspace, then try: Pay 0.20 USD to Seatwise. This local scripted assistant uses your simulated $1 daily chat mandate. It does not contact an AI provider or a blockchain." : "I can help you make a USD payment. Tell me the amount and seller Smart Account address. Signed-in chats use your default agent and $1 daily chat mandate. If you\'re not signed in, include your mandate ID and agent identification."}</p><p className="muted">{IS_STATIC_DEMO ? "One simulated payment per chat. No real funds move." : "One payment per chat. Asking me to pay authorizes the payment."}</p></article>
           {messages.length === 0 && <button className="chat-example" onClick={() => { setDraft(example); input.current?.focus(); }}>Try a payment prompt <span aria-hidden="true">↗</span></button>}
           {messages.map((message, index) => <article className={`chat-message ${message.role}`} key={index}><p className="eyebrow">{message.role === "user" ? "You" : "Payment agent"}</p><p>{message.text}</p></article>)}
           {busy && <p className="chat-thinking muted" role="status">{needsCheck ? "Checking response…" : "Agent is working…"}</p>}
@@ -98,7 +101,7 @@ export function ChatPage() {
       {session?.agentId && <p className="workspace-note chat-request">Your chat agent: <code>{session.agentId}</code></p>}
       {session?.mandate && <p className="workspace-note">{session.mandate.name} · {money(session.mandate.limit, "USD")} per {session.mandate.period === "day" ? "24 hours" : session.mandate.period === "week" ? "7 days" : "30 days"} · {session.mandate.status} · expires {new Date(session.mandate.expiresAt).toLocaleDateString()}. <a href="/mandates">Manage mandates</a></p>}
       {session && <p className="workspace-note chat-request">Payment request ID: <code>{session.requestId}</code>{(session.paymentAttempted && result?.status !== "paid") && <>. For a retry, use <code>pnpm agent:langchain --request-id "{session.requestId}"</code> with the same payment details{session.agentId ? ` and agent identification ${session.agentId}` : ""}.</>}</p>}
-      <p className="workspace-note">Your default mandate ID stays on the server. Messages you type, including any IDs you enter, are sent to Gemini. Mandate IDs are hidden in the conversation. Chats expire after one hour of inactivity or an API restart. Reloading this page clears the conversation from view.</p>
+      <p className="workspace-note">{IS_STATIC_DEMO ? "Demo messages stay in this browser. No API keys, personal accounts, or real payment details are needed. Reloading clears the visible conversation." : "Your default mandate ID stays on the server. Messages you type, including any IDs you enter, are sent to Gemini. Mandate IDs are hidden in the conversation. Chats expire after one hour of inactivity or an API restart. Reloading this page clears the conversation from view."}</p>
     </main>
   </div>;
 }

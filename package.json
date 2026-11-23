@@ -8,8 +8,10 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "pnpm -r --parallel --filter @mandate/web --filter @mandate/receipts --filter @mandate/merchant --filter @mandate/facilitator dev",
+    "dev": "pnpm --filter @mandate/web dev",
+    "dev:services": "pnpm -r --parallel --filter @mandate/web --filter @mandate/receipts --filter @mandate/merchant --filter @mandate/facilitator dev",
     "dev:web": "pnpm --filter @mandate/web dev",
+    "dev:demo": "pnpm --filter @mandate/web dev",
     "dev:receipts": "pnpm --filter @mandate/receipts dev",
     "dev:merchant": "pnpm --filter @mandate/merchant dev",
     "dev:facilitator": "pnpm --filter @mandate/facilitator dev",
@@ -28,7 +30,9 @@
     "test:agents": "node --env-file=.env scripts/test-live-agents.ts",
     "test:contracts": "cargo test --manifest-path contracts/Cargo.toml --workspace",
     "build": "pnpm --filter @mandate/web build",
-    "test:ui": "pnpm --filter @mandate/web test:ui"
+    "test:ui": "pnpm --filter @mandate/web test:ui",
+    "test:demo": "pnpm --filter @mandate/web test:demo",
+    "test:ui:demo": "pnpm --filter @mandate/web test:ui:demo"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^16.4.1"

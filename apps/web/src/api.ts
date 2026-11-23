@@ -1,9 +1,21 @@
 import type { AccountAgent, AccountMandate, CreateWorkflowInput, FiatCheckout, FiatFundingStatus, FundingMethod, MandateCreation, CreateAccountMandateInput, Customer, MandatePaymentInput, MandatePaymentPreview, MandatePaymentResult, PaymentChatState, PaymentEntry, PaymentNetwork, PaymentWorkspace, SpendingAccount } from "@mandate/shared";
+import { createDemo, DEMO_LOGIN, DemoError } from "./demo.ts";
+import { IS_STATIC_DEMO } from "./demo-mode.ts";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
+let demo: ReturnType<typeof createDemo> | undefined;
 async function request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
+  if (IS_STATIC_DEMO) {
+    try {
+      demo ??= createDemo(window.localStorage);
+      return demo.request(path, method, body as Record<string, unknown> | undefined) as T;
+    } catch (error) {
+      if (error instanceof DemoError) throw new ApiError(error.status, error.message);
+      throw new Error("The demo could not save data in this browser. Enable local storage and try again.");
+    }
+  }
   let response: Response;
   try {
     response = await fetch(`/api${path}`, { method, credentials: path === "/pay" || path === "/pay/preview" || (path.startsWith("/chat/") && path !== "/chat/sessions") ? "omit" : "same-origin", headers: { ...(body ? { "content-type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined });
@@ -23,7 +35,7 @@ export const api = {
   removeAgent: (id: string) => request<void>(`/agents/${encodeURIComponent(id)}`, "DELETE"),
   workspace: () => request<PaymentWorkspace>("/workspace"),
   network: () => request<{ mode: PaymentWorkspace["mode"]; network?: PaymentNetwork }>("/network"),
-  register: (input: { name: string; email: string; password: string; company?: string; team?: string }) => request<Customer>("/auth/register", "POST", input),
+  loginDemo: () => request<Customer>("/auth/login", "POST", { email: DEMO_LOGIN.email, password: DEMO_LOGIN.password }),
   updateProfile: (input: { company?: string; team?: string }) => request<Customer>("/profile", "PATCH", input),
   /** A new agent with its own key, plus the mandate it gets when it connects. */
   createWorkflow: (input: CreateWorkflowInput) => request<AccountAgent>("/workflows", "POST", input),

@@ -1,6 +1,7 @@
 // A centred modal. Closes on Escape and on a click outside the panel.
 import { useEffect, useRef, type ReactNode } from "react";
 import { CloseIcon } from "./icons.tsx";
+import { TestNetworkWarning } from "./TestNetworkWarning.tsx";
 
 interface DialogProps {
   title: string;
@@ -56,6 +57,7 @@ export function Dialog({ title, onClose, children, className, variant = "sheet" 
             <CloseIcon size={18} />
           </button>
         </header>
+        <TestNetworkWarning />
         {children}
       </div>
     </div>
