@@ -5,6 +5,24 @@ dist/
 !.env.example
 *.sqlite
 *.sqlite-*
+
+# Local credentials, signing material and alternate database formats
+.envrc
+.aws/
+.ssh/
+.mandate/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+*.db
+*.db-*
+*.sqlite3
+*.sqlite3-*
+
 contracts/target/
 .DS_Store
 .claude/

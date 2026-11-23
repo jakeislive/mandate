@@ -6,16 +6,6 @@
   },
   "network": "stellar:testnet",
   "policy": "CDUOUHZNVEWW6J4ELPK6DGHGO7RGBCQ54TNSE6AOTLUTCL5GYE7FJHGQ",
-  "privatePairs": [
-    {
-      "accountId": "STELLAR_2a0eaeba40967a7c9397ea7604bc4380",
-      "classicAddress": "GBFAYXQA3EGVKIRSKJI2G7ELS2OZNJRTIZ4S3QEE2ELHSNE4NIFQ5TRD"
-    },
-    {
-      "accountId": "STELLAR_d95fb9dd62ea791b751f4f0cf15228c0",
-      "classicAddress": "GD334PPQXHAZPDOJDHC7POVESVUKHIGZK3JGDXD6SF5COR3OPTYKX3CR"
-    }
-  ],
   "traditionalDemo": {
     "source": "BANK_DEMO_E46FD6A1650B8AE44808",
     "recipient": "BANK_DEMO_95F012AC9FAAFF938052",
