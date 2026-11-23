@@ -1,4 +1,4 @@
-# Real Testnet snapshot on Cloudflare Pages
+# Real Testnet snapshot on Cloudflare Workers
 
 The `deploy` branch displays fixed public records from the actual Stellar Testnet: two smart accounts, two on-chain spending mandates, and three confirmed USD transfers. It needs no runtime API, database, Stripe credentials, Gemini key, or Stellar signing keys.
 
@@ -6,25 +6,36 @@ Cloudflare builds and publishes only the web app in `apps/web/dist`. The native 
 
 ## Connect the GitHub repository
 
-In the Cloudflare dashboard, create a **Pages** project and connect this GitHub repository. Use these settings:
+The repository includes a root [wrangler.json](../wrangler.json) for a **Workers Static Assets** deployment. This matches the dashboard flow that runs `npx wrangler deploy`. It publishes only `apps/web/dist`, with no backend Worker entry point, database, or mobile build.
+
+Connect this GitHub repository to the Worker using these settings:
 
 | Setting | Value |
 |---|---|
 | Production branch | `deploy` |
-| Framework preset | Vite |
 | Root directory | Repository root; leave blank |
-| Build command | `pnpm build` |
-| Build output directory | `apps/web/dist` |
+| Build command | `pnpm run build` |
+| Deploy command | `npx wrangler deploy` |
+| Worker name | `mandate`; match the dashboard name to `wrangler.json` |
+| Static asset directory | `apps/web/dist`, configured in `wrangler.json` |
 | Node version | `24` (also declared in `.node-version`) |
 | Build environment variable | `PNPM_VERSION=12.18.0` |
 
 No runtime secrets are required. Leave `VITE_STATIC_DEMO` unset: the read-only snapshot is the default. Do not set it to `false` for this deployment. The build validates the snapshot's data limits before producing the web assets.
 
-Select **Save and Deploy**. Pages publishes the site and rebuilds it when commits reach `deploy`. The included redirect rules support direct visits and refreshes on dashboard, mandate, spending, payment, and chat routes.
+Select **Save and Deploy**. Cloudflare publishes the site and rebuilds it when commits reach `deploy`. The asset configuration enables single-page application routing for direct visits and refreshes. The included header and redirect files are copied into the static build output.
 
-If you begin in the Workers setup flow, choose **Pages** before connecting the repository. This project publishes static assets and does not need a Worker entry point or deploy command.
+The Worker name must match the name in `wrangler.json`. If the existing dashboard project has a different name, change the config's `name` to that exact name before retrying.
 
-See [Cloudflare's Git integration guide](https://developers.cloudflare.com/pages/get-started/git-integration/) for the dashboard workflow.
+See [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) and [static asset configuration](https://developers.cloudflare.com/workers/static-assets/binding/) for the dashboard workflow and configuration format.
+
+## Why the earlier deployment failed
+
+The log's `pnpm run build` succeeded. The next command, `npx wrangler deploy`, had no root Wrangler configuration, so Cloudflare tried automatic application detection at the monorepo root and refused to select an application. The explicit asset directory fixes that ambiguity.
+
+The logged build command also omitted the Testnet snapshot validation step. That means it built a revision older than the current real-Testnet `deploy` branch. Confirm the production branch is `deploy` and the latest local commits have been pushed. Selecting `deploy` alone does not fix a missing Workers configuration.
+
+For an alternative **Pages** project, publish `apps/web/dist` after `pnpm run build` without a Wrangler deploy command. The settings above are for the existing Workers deployment flow shown in the error log.
 
 ## Snapshot behavior
 

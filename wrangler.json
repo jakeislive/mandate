@@ -1,0 +1,8 @@
+{
+  "name": "mandate",
+  "compatibility_date": "2026-11-22",
+  "assets": {
+    "directory": "./apps/web/dist",
+    "not_found_handling": "single-page-application"
+  }
+}
